@@ -12,17 +12,25 @@ following line with --ClassName.attribute=True
 > jupyter nbconvert --to notebook --SolutionPreprocessor.solution=True test.ipynb
 '''
 
+'''
+This is the metadata format the preprocessor is expecting
+
+"solutions": {
+        "visible_in_assignment": true
+    }
+'''
+
 from nbconvert.preprocessors import Preprocessor
 from traitlets import Bool
 
 class SolutionPreprocessor(Preprocessor):
 
-    solution = Bool(default_value=False, config=True)
+    assignment = Bool(default_value=True, config=True)
 
-    def is_assigned(self, c):
-        # cells marked as having slideshow slide metadata are whitelisted
-        if hasattr(c.metadata, 'slideshow'):
-            if c.metadata.slideshow.slide_type == 'slide':
+    def is_visible_in_assignment(self, c):
+        # only cells marked as being visible in assignment are whitelisted
+        if hasattr(c.metadata, 'solutions'):
+            if c.metadata.solutions.visible_in_assignment == True:
                 return True
             else:
                 return False
@@ -30,8 +38,10 @@ class SolutionPreprocessor(Preprocessor):
             return False
 
     def preprocess(self, nb, resources):
-        if self.solution:
-            nb.cells = [c for c in nb.cells if self.is_assigned(c)]
+        # if we are creating a solution, we leave cells alone
+        # if we are creating an asssignment, only copy whitelisted cells
+        if self.assignment == True:
+            nb.cells = [c for c in nb.cells if self.is_visible_in_assignment(c)]
         return nb, resources
 
 
